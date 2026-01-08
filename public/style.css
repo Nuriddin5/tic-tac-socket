@@ -397,3 +397,97 @@ footer {
     color: #00ff9d;
     font-weight: bold;
 }
+
+/* Qo'shimcha CSS qismi */
+.player-info {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1em;
+    padding: 15px 20px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    min-width: 150px;
+}
+
+.x-player {
+    color: #00ff9d;
+    border: 2px solid #00ff9d;
+}
+
+.o-player {
+    color: #ff416c;
+    border: 2px solid #ff416c;
+}
+
+.vs {
+    font-size: 1.3em;
+    color: #00d4ff;
+    font-weight: bold;
+    padding: 0 15px;
+}
+
+/* Turn indicator animation */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.current-player {
+    animation: pulse 1s infinite;
+    display: inline-block;
+}
+
+/* Game status animations */
+.game-status {
+    text-align: center;
+    font-size: 1.1em;
+    padding: 12px;
+    border-radius: 10px;
+    background: rgba(0, 212, 255, 0.1);
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+/* Loading state */
+.loading {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .player-info {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .vs {
+        padding: 10px 0;
+    }
+    
+    .game-container {
+        gap: 20px;
+    }
+    
+    .cell {
+        width: 70px;
+        height: 70px;
+        font-size: 2.5em;
+    }
+}

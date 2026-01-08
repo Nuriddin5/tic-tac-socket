@@ -3,6 +3,7 @@ let socket = io();
 let currentGameId = null;
 let mySymbol = null;
 let myUsername = null;
+let currentGamePlayers = {};
 
 // DOM Elements
 const loginSection = document.getElementById('loginSection');
@@ -67,7 +68,7 @@ function setUsername() {
     lobbySection.classList.add('active');
     
     // Chatga xabar qo'shish
-    addMessage('system', '12:00', `Xush kelibsiz, ${username}!`);
+    addMessage('system', new Date().toLocaleTimeString(), `Xush kelibsiz, ${username}!`);
 }
 
 function createGame() {
@@ -75,7 +76,9 @@ function createGame() {
 }
 
 function refreshGames() {
-    socket.emit('set_username', myUsername);
+    if (myUsername) {
+        socket.emit('set_username', myUsername);
+    }
 }
 
 function joinGame(gameId) {
@@ -83,7 +86,10 @@ function joinGame(gameId) {
 }
 
 function makeMove(cellIndex) {
-    if (!currentGameId || !mySymbol) return;
+    // if (!currentGameId || !mySymbol) {
+    //     alert('O\'yin boshlanmagan!');
+    //     return;
+    // }
     
     socket.emit('make_move', { gameId: currentGameId, cellIndex });
     
@@ -102,6 +108,7 @@ function leaveGame() {
     
     currentGameId = null;
     mySymbol = null;
+    currentGamePlayers = {};
     
     // UI ni yangilash
     gameSection.classList.remove('active');
@@ -111,11 +118,15 @@ function leaveGame() {
     
     // Game boardni tozalash
     clearBoard();
+    refreshGames(); // Available o'yinlarni yangilash
 }
 
 function sendMessage() {
     const message = chatInput.value.trim();
-    if (!message || !currentGameId) return;
+    if (!message || !currentGameId) {
+        alert('Xabar yozish uchun o\'yin ichida bo\'lishingiz kerak!');
+        return;
+    }
     
     socket.emit('send_message', { gameId: currentGameId, message });
     chatInput.value = '';
@@ -127,8 +138,8 @@ function addMessage(username, time, message, isSystem = false) {
     
     messageDiv.innerHTML = `
         <span class="time">${time}</span>
-        <strong>${username}:</strong>
-        <span class="content"> ${message}</span>
+        ${isSystem ? '' : '<strong>' + username + ':</strong>'}
+        <span class="content">${message}</span>
     `;
     
     chatMessages.appendChild(messageDiv);
@@ -153,6 +164,21 @@ function clearBoard() {
         cell.textContent = '';
         cell.className = 'cell';
     });
+}
+
+function updatePlayerNames(players, symbols) {
+    // Playerlarni aniqlash
+    let xPlayerId = null;
+    let oPlayerId = null;
+    
+    for (const [playerId, symbol] of Object.entries(symbols)) {
+        if (symbol === 'X') xPlayerId = playerId;
+        if (symbol === 'O') oPlayerId = playerId;
+    }
+    
+    // Ismlarni o'rnatish
+    playerXName.textContent = xPlayerId ? players[xPlayerId] || 'X o\'yinchi' : 'Kutilmoqda...';
+    playerOName.textContent = oPlayerId ? players[oPlayerId] || 'O o\'yinchi' : 'Kutilmoqda...';
 }
 
 // Socket.IO Event Handlers
@@ -190,31 +216,43 @@ socket.on('available_games', (games) => {
 socket.on('game_created', (data) => {
     currentGameId = data.gameId;
     mySymbol = data.symbol;
+    currentGamePlayers = data.players || {};
     
     // UI ni yangilash
     gameIdDisplay.textContent = currentGameId;
-    playerXName.textContent = myUsername;
-    playerOName.textContent = 'Kutilmoqda...';
+    updatePlayerNames(data.players, { [socket.id]: mySymbol });
     
+    // Sahifalarni o'zgartirish
     lobbySection.classList.remove('active');
     lobbySection.classList.add('hidden');
     gameSection.classList.remove('hidden');
     gameSection.classList.add('active');
     
     gameStatus.textContent = 'Ikkinchi o\'yinchi kutilmoqda...';
+    gameStatus.style.color = '#ffd700';
+    
     addMessage('system', new Date().toLocaleTimeString(), 
         `Siz ${currentGameId} o'yinini yaratdingiz. Ikkinchi o'yinchi kutilmoqda...`, true);
 });
 
 socket.on('game_started', (data) => {
     currentGameId = data.gameId;
+    currentGamePlayers = data.players || {};
     
     // UI ni yangilash
     gameIdDisplay.textContent = currentGameId;
-    playerXName.textContent = data.players[Object.keys(data.players)[0]] || 'X o\'yinchi';
-    playerOName.textContent = data.players[Object.keys(data.players)[1]] || 'O o\'yinchi';
+    updatePlayerNames(data.players, data.symbols);
+    
+    // Agar o'yin boshlamagan bo'lsa, sahifani o'zgartirish
+    if (gameSection.classList.contains('hidden')) {
+        lobbySection.classList.remove('active');
+        lobbySection.classList.add('hidden');
+        gameSection.classList.remove('hidden');
+        gameSection.classList.add('active');
+    }
     
     gameStatus.textContent = 'O\'yin boshlandi!';
+    gameStatus.style.color = '#00ff9d';
     currentPlayerIndicator.textContent = data.currentPlayer;
     currentPlayerIndicator.style.color = data.currentPlayer === 'X' ? '#00ff9d' : '#ff416c';
     
@@ -234,6 +272,7 @@ socket.on('game_updated', (data) => {
             gameStatus.textContent = 'Durrang!';
             gameStatus.style.color = '#ffd700';
         } else {
+            console.log(data);
             gameStatus.textContent = `${data.winner} g'olib bo'ldi!`;
             gameStatus.style.color = data.winner === 'X' ? '#00ff9d' : '#ff416c';
         }
@@ -255,8 +294,28 @@ socket.on('player_left', (data) => {
     gameStatus.style.color = '#ff416c';
 });
 
+socket.on('left_game', () => {
+    currentGameId = null;
+    mySymbol = null;
+    currentGamePlayers = {};
+    
+    // UI ni yangilash
+    gameSection.classList.remove('active');
+    gameSection.classList.add('hidden');
+    lobbySection.classList.remove('hidden');
+    lobbySection.classList.add('active');
+    
+    // Game boardni tozalash
+    clearBoard();
+    refreshGames();
+    
+    addMessage('system', new Date().toLocaleTimeString(), 
+        'Siz o\'yindan chiqdingiz.', true);
+});
+
 socket.on('error', (message) => {
     alert(`Xato: ${message}`);
+    console.error('Socket.IO xato:', message);
 });
 
 // Disconnect handling
@@ -281,3 +340,6 @@ setInterval(() => {
         socket.connect();
     }
 }, 5000);
+
+// Global function for joinGame
+window.joinGame = joinGame;

@@ -53,18 +53,26 @@ io.on('connection', (socket) => {
       currentPlayer: 'X',
       status: 'waiting',
       winner: null,
-      players: {}
+      players: {},
+      symbols: {}
     };
     
     players[socket.id].gameId = gameId;
     players[socket.id].symbol = 'X';
     
     games[gameId].players[socket.id] = players[socket.id].username;
+    games[gameId].symbols[socket.id] = 'X';
     
     socket.join(gameId);
-    socket.emit('game_created', { gameId, symbol: 'X' });
     
-    console.log(`Yangi o'yin yaratildi: ${gameId}`);
+    // Yaratuvchiga xabar yuborish
+    socket.emit('game_created', { 
+      gameId, 
+      symbol: 'X',
+      players: { [socket.id]: players[socket.id].username }
+    });
+    
+    console.log(`${players[socket.id].username} yangi o'yin yaratdi: ${gameId}`);
     
     // Available o'yinlarni yangilash
     io.emit('available_games', Object.keys(games)
@@ -85,25 +93,32 @@ io.on('connection', (socket) => {
       return;
     }
     
+    if (game.player1 === socket.id) {
+      socket.emit('error', 'Siz allaqachon bu o\'yindasiz');
+      return;
+    }
+    
     // Player2 ni o'rnatish
     game.player2 = socket.id;
     game.status = 'playing';
     game.players[socket.id] = players[socket.id].username;
+    game.symbols[socket.id] = 'O';
     
     players[socket.id].gameId = gameId;
     players[socket.id].symbol = 'O';
     
     socket.join(gameId);
     
-    // O'yinchilarga xabar berish
+    console.log(`${players[socket.id].username} ${gameId} o'yiniga qo'shildi`);
+    
+    // IKKALA O'YINCHIGA HAM GAME_STARTED XABARINI YUBORISH
     io.to(gameId).emit('game_started', {
       gameId,
       board: game.board,
       currentPlayer: game.currentPlayer,
-      players: game.players
+      players: game.players,
+      symbols: game.symbols
     });
-    
-    console.log(`${players[socket.id].username} ${gameId} o'yiniga qo'shildi`);
     
     // Available o'yinlarni yangilash
     io.emit('available_games', Object.keys(games)
@@ -115,7 +130,16 @@ io.on('connection', (socket) => {
     const game = games[gameId];
     const player = players[socket.id];
     
-    if (!game || game.status !== 'playing') return;
+    if (!game || game.status !== 'playing') {
+      socket.emit('error', 'O\'yin boshlamagan yoki tugagan');
+      return;
+    }
+    
+    // O'yinchimi tekshirish
+    if (socket.id !== game.player1 && socket.id !== game.player2) {
+      socket.emit('error', 'Siz bu o\'yinda emassiz');
+      return;
+    }
     
     // Turni tekshirish
     if (player.symbol !== game.currentPlayer) {
@@ -171,6 +195,43 @@ io.on('connection', (socket) => {
     });
   });
 
+  // O'yindan chiqish
+  socket.on('leave_game', (gameId) => {
+    const player = players[socket.id];
+    const game = games[gameId];
+    
+    if (game && player) {
+      game.status = 'finished';
+      io.to(gameId).emit('player_left', {
+        username: player.username
+      });
+      
+      // O'yinchilarni o'chirish
+      delete game.players[socket.id];
+      delete game.symbols[socket.id];
+      
+      if (socket.id === game.player1) {
+        game.player1 = null;
+      } else if (socket.id === game.player2) {
+        game.player2 = null;
+      }
+      
+      // Agar o'yinda o'yinchi qolmagan bo'lsa
+      if (!game.player1 && !game.player2) {
+        delete games[gameId];
+      }
+    }
+    
+    // Player ma'lumotlarini yangilash
+    if (player) {
+      player.gameId = null;
+      player.symbol = null;
+    }
+    
+    socket.leave(gameId);
+    socket.emit('left_game');
+  });
+
   // Disconnect
   socket.on('disconnect', () => {
     const player = players[socket.id];
@@ -181,6 +242,21 @@ io.on('connection', (socket) => {
         io.to(player.gameId).emit('player_left', {
           username: player.username
         });
+        
+        // O'yinchilarni o'chirish
+        delete game.players[socket.id];
+        delete game.symbols[socket.id];
+        
+        if (socket.id === game.player1) {
+          game.player1 = null;
+        } else if (socket.id === game.player2) {
+          game.player2 = null;
+        }
+        
+        // Agar o'yinda o'yinchi qolmagan bo'lsa
+        if (!game.player1 && !game.player2) {
+          delete games[player.gameId];
+        }
       }
     }
     
