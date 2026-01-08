@@ -1,28 +1,50 @@
-// Vercel URL'ini aniqlash
-const serverUrl = 'https://tic-tac-socket.vercel.app';
-
-// Socket.IO connection
-const socket = io(serverUrl, {
-  transports: ['websocket', 'polling'],
+// Vercel uchun to'g'ri Socket.IO konfiguratsiyasi
+const socket = io('https://tic-tac-socket.vercel.app', {
+  // FAQT polling transport'ni ishlating
+  transports: ['polling'], // 'websocket' ni O'CHIRING!
   reconnection: true,
   reconnectionAttempts: 10,
   reconnectionDelay: 1000,
-  timeout: 20000,
+  timeout: 15000,
   path: '/socket.io/',
-  withCredentials: true
+  withCredentials: false, // false qiling
+  forceNew: true,
+  multiplex: false
 });
 
-// Connection events
+// Connection monitoring
 socket.on('connect', () => {
-  console.log('✅ Serverga ulandik! ID:', socket.id);
-  document.getElementById('connectionStatus').innerHTML = 
-    '<span style="color: green;">🟢 Onlayn</span>';
+  console.log('✅ Serverga HTTP polling orqali ulandik!');
+  console.log('Socket ID:', socket.id);
+  
+  // UI ga statusni yangilash
+  if (document.getElementById('connectionStatus')) {
+    document.getElementById('connectionStatus').innerHTML = 
+      '<span style="color: green;">🟢 Onlayn (Polling)</span>';
+  }
 });
 
 socket.on('connect_error', (error) => {
-  console.error('❌ Ulanish xatosi:', error);
-  document.getElementById('connectionStatus').innerHTML = 
-    '<span style="color: red;">🔴 Offlayn - qayta ulanmoqda...</span>';
+  console.error('❌ Ulanish xatosi:', error.message);
+  
+  if (document.getElementById('connectionStatus')) {
+    document.getElementById('connectionStatus').innerHTML = 
+      '<span style="color: red;">🔴 Ulanishda muammo</span>';
+  }
+  
+  // 5 soniyadan keyin qayta urinish
+  setTimeout(() => {
+    console.log('🔄 Qayta ulanishga urinmoqda...');
+    socket.connect();
+  }, 5000);
+});
+
+// Auto-reconnect
+socket.on('disconnect', (reason) => {
+  console.log('🔌 Uzildi:', reason);
+  if (reason === 'io server disconnect') {
+    socket.connect();
+  }
 });
 
 let currentGameId = null;

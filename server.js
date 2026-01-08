@@ -6,18 +6,17 @@ const path = require('path');
 const app = express();
 const server = http.createServer(app);
 
-// Vercel uchun Socket.IO sozlamalari
+// Vercel uchun - FAQT polling
 const io = new Server(server, {
   cors: {
-    origin: [
-      'https://tic-tac-socket.vercel.app',
-      'http://localhost:3000'
-    ],
-    credentials: true,
-    methods: ["GET", "POST"]
+    origin: '*', // Barcha domain'larni qabul qilish
+    methods: ["GET", "POST"],
+    credentials: false
   },
-  transports: ['websocket', 'polling'],
-  allowEIO3: true
+  transports: ['polling'], // WebSocket'siz
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000
 });
 
 // Static files
