@@ -1,5 +1,20 @@
 // Socket.IO connection
-let socket = io();
+const socket = io('https://tic-tac-socket.vercel.app', {
+  transports: ['websocket', 'polling'],
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  timeout: 20000
+});
+
+// Qo'shimcha sozlamalar:
+socket.on('connect', () => {
+  console.log('✅ Serverga muvaffaqiyatli ulandik!');
+});
+
+socket.on('connect_error', (error) => {
+  console.error('❌ Ulanishda xato:', error.message);
+});
 let currentGameId = null;
 let mySymbol = null;
 let myUsername = null;
