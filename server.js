@@ -5,15 +5,45 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
+
+// Vercel uchun Socket.IO sozlamalari
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: [
+      'https://tic-tac-socket.vercel.app',
+      'http://localhost:3000'
+    ],
+    credentials: true,
     methods: ["GET", "POST"]
-  }
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
 });
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
+
+// CORS headers
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  next();
+});
+
+// Test endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'online',
+    socketio: 'ready',
+    games: Object.keys(games).length
+  });
+});
+
+// Main route
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // Game state
 const games = {};
@@ -283,7 +313,22 @@ function checkWinner(board) {
   return null;
 }
 
+// Vercel port
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server ${PORT} portda ishga tushdi`);
-});
+
+// Faqat localda server ishlatish
+if (process.env.VERCEL !== '1') {
+  server.listen(PORT, () => {
+    console.log(`🚀 Server ${PORT} portda`);
+  });
+}
+
+// Vercel uchun export
+module.exports = (req, res) => {
+  // Socket.IO so'rovlarini handle qilish
+  if (req.url.startsWith('/socket.io/')) {
+    server.emit('request', req, res);
+  } else {
+    app(req, res);
+  }
+};

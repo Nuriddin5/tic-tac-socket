@@ -1,20 +1,30 @@
+// Vercel URL'ini aniqlash
+const serverUrl = 'https://tic-tac-socket.vercel.app';
+
 // Socket.IO connection
-const socket = io('https://tic-tac-socket.vercel.app', {
+const socket = io(serverUrl, {
   transports: ['websocket', 'polling'],
   reconnection: true,
-  reconnectionAttempts: 5,
+  reconnectionAttempts: 10,
   reconnectionDelay: 1000,
-  timeout: 20000
+  timeout: 20000,
+  path: '/socket.io/',
+  withCredentials: true
 });
 
-// Qo'shimcha sozlamalar:
+// Connection events
 socket.on('connect', () => {
-  console.log('✅ Serverga muvaffaqiyatli ulandik!');
+  console.log('✅ Serverga ulandik! ID:', socket.id);
+  document.getElementById('connectionStatus').innerHTML = 
+    '<span style="color: green;">🟢 Onlayn</span>';
 });
 
 socket.on('connect_error', (error) => {
-  console.error('❌ Ulanishda xato:', error.message);
+  console.error('❌ Ulanish xatosi:', error);
+  document.getElementById('connectionStatus').innerHTML = 
+    '<span style="color: red;">🔴 Offlayn - qayta ulanmoqda...</span>';
 });
+
 let currentGameId = null;
 let mySymbol = null;
 let myUsername = null;
