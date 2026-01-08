@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X va 0 - Real-time O'yin</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-gamepad"></i> X va 0 O'yini</h1>
+            <p class="subtitle">Real-time multiplayer Socket.IO bilan</p>
+        </header>
+
+        <div class="app-container">
+            <!-- Login Section -->
+            <div id="loginSection" class="section active">
+                <div class="card">
+                    <h2><i class="fas fa-user"></i> Username kiriting</h2>
+                    <div class="form-group">
+                        <input type="text" id="usernameInput" placeholder="Username" maxlength="13">
+                        <button id="setUsernameBtn" class="btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Kirish
+                        </button>
+                    </div>
+                    <p class="info-text">Username orqali boshqalar bilan o'ynashingiz mumkin</p>
+                </div>
+            </div>
+
+            <!-- Lobby Section -->
+            <div id="lobbySection" class="section hidden">
+                <div class="card">
+                    <h2><i class="fas fa-home"></i> Lobby</h2>
+                    <p>Xush kelibsiz, <span id="usernameDisplay" class="username"></span>!</p>
+                    
+                    <div class="button-group">
+                        <button id="createGameBtn" class="btn-success">
+                            <i class="fas fa-plus-circle"></i> Yangi O'yin
+                        </button>
+                        <button id="refreshGamesBtn" class="btn-secondary">
+                            <i class="fas fa-sync-alt"></i> Yangilash
+                        </button>
+                    </div>
+
+                    <div class="available-games">
+                        <h3><i class="fas fa-list"></i> Mavjud O'yinlar</h3>
+                        <div id="gamesList" class="games-list">
+                            <p class="empty-text">Hozircha o'yinlar mavjud emas...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Section -->
+            <div id="gameSection" class="section hidden">
+                <div class="game-container">
+                    <div class="game-header">
+                        <h2>O'yin ID: <span id="gameIdDisplay" class="game-id"></span></h2>
+                        <button id="leaveGameBtn" class="btn-danger">
+                            <i class="fas fa-sign-out-alt"></i> Chiqish
+                        </button>
+                    </div>
+
+                    <div class="game-info">
+                        <div class="player-info">
+                            <div class="player x-player">
+                                <i class="fas fa-times"></i>
+                                <span id="playerXName">X o'yinchi</span>
+                            </div>
+                            <div class="vs">VS</div>
+                            <div class="player o-player">
+                                <i class="far fa-circle"></i>
+                                <span id="playerOName">O o'yinchi</span>
+                            </div>
+                        </div>
+
+                        <div class="turn-indicator">
+                            Navbat: <span id="currentPlayerIndicator" class="current-player">X</span>
+                        </div>
+
+                        <div id="gameStatus" class="game-status">
+                            O'yin kutilmoqda...
+                        </div>
+                    </div>
+
+                    <!-- Game Board -->
+                    <div class="game-board">
+                        <div class="board-row">
+                            <div class="cell" data-index="0"></div>
+                            <div class="cell" data-index="1"></div>
+                            <div class="cell" data-index="2"></div>
+                        </div>
+                        <div class="board-row">
+                            <div class="cell" data-index="3"></div>
+                            <div class="cell" data-index="4"></div>
+                            <div class="cell" data-index="5"></div>
+                        </div>
+                        <div class="board-row">
+                            <div class="cell" data-index="6"></div>
+                            <div class="cell" data-index="7"></div>
+                            <div class="cell" data-index="8"></div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Section -->
+                    <div class="chat-section">
+                        <h3><i class="fas fa-comments"></i> Chat</h3>
+                        <div id="chatMessages" class="chat-messages">
+                            <div class="message system">
+                                <span class="time">12:00</span>
+                                <span class="content">O'yin chatiga xush kelibsiz!</span>
+                            </div>
+                        </div>
+                        <div class="chat-input">
+                            <input type="text" id="chatInput" placeholder="Xabar yozing...">
+                            <button id="sendMessageBtn" class="btn-primary">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Socket.IO bilan real-time o'yin | Vercelga deploy qilish uchun tayyor</p>
+        </footer>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
+</body>
+</html>
