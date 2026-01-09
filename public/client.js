@@ -1,7 +1,6 @@
 // Vercel uchun to'g'ri Socket.IO konfiguratsiyasi
-const socket = io('https://tic-tac-socket.vercel.app', {
+const socket = io('https://tic-tac-socket.onrender.com', {
   // FAQT polling transport'ni ishlating
-  transports: ['polling'], // 'websocket' ni O'CHIRING!
   reconnection: true,
   reconnectionAttempts: 10,
   reconnectionDelay: 1000,
